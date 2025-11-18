@@ -1,0 +1,10 @@
+[workspace]
+channels = ["conda-forge","bioconda"]
+name = "bioba2025"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+nextclade = ">=3.15.1,<4"
