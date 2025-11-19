@@ -1,6 +1,6 @@
 # 📘 Proyecto Gen_Evo – Pipeline Spike SARS-CoV-2
 
-Pipeline para procesar secuencias Spike, identificar mutaciones relevantes, generar haplotipos reales y obtener secuencias listas para modelado estructural 3D.
+Pipeline :v "cuando termino resumo bonito"
 
 ---
 
