@@ -1,0 +1,13 @@
+id	pos	mut	polaridad_cambio	carga_cambio	cambio_fisicoquimico	conteo	frecuencia(%)
+C01m01	18	L18F	apolar , apolar	neutra , neutra	no	1	100.00
+C01m01	20	T20N	polar , polar	neutra , neutra	no	1	100.00
+C01m01	26	P26S	apolar , polar	neutra , neutra	si	1	100.00
+C01m01	138	D138Y	polar , polar	negativa , neutra	si	1	100.00
+C01m01	190	R190S	polar , polar	positiva , neutra	si	1	100.00
+C01m01	417	K417T	polar , polar	positiva , neutra	si	1	100.00
+C01m01	484	E484K	polar , polar	negativa , positiva	si	1	100.00
+C01m01	501	N501Y	polar , polar	neutra , neutra	no	1	100.00
+C01m01	614	D614G	polar , apolar	negativa , neutra	si	1	100.00
+C01m01	655	H655Y	polar , polar	positiva , neutra	si	1	100.00
+C01m01	1027	T1027I	polar , apolar	neutra , neutra	si	1	100.00
+C01m01	1176	V1176F	apolar , apolar	neutra , neutra	no	1	100.00
