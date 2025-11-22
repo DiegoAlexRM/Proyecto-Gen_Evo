@@ -1,4 +1,4 @@
-# 🧬 Análisis estructural y evolutivo de glicanos y mutaciones en Spike de SARS-CoV-2
+# Análisis estructural y evolutivo de glicanos y mutaciones en Spike de SARS-CoV-2
 
 ---
 ⚠️ Nota importante
@@ -9,13 +9,13 @@ Este archivo fija las versiones exactas de todas las dependencias, evitando erro
 
 ---
 
-## 📌 Hipótesis
+## Hipótesis
 
 Las mutaciones de alta frecuencia en la proteína Spike del SARS-CoV-2 coevolucionan con los sitios de N-glicosilación, modificando el blindaje glicano, la accesibilidad antigénica y la estructura tridimensional de la proteína a lo largo de la evolución de las variantes.
 
 ---
 
-## 🎯 Objetivo
+## Objetivo
 
 Evaluar cómo las mutaciones frecuentes de Spike afectan la estructura y el entorno tridimensional de los sitios N-glicosilados mediante haplotipos representativos y modelado estructural.
 
@@ -25,7 +25,7 @@ Evaluar cómo las mutaciones frecuentes de Spike afectan la estructura y el ento
 
 ---
 
-## 🧪 Datos utilizados
+## Datos utilizados
 
 - Secuencias de GISAID
 - Variantes analizadas: **Lambda, Gamma, Delta y Ómicron**.
@@ -37,7 +37,7 @@ Evaluar cómo las mutaciones frecuentes de Spike afectan la estructura y el ento
 
 ---
 
-## 🛠️ Lenguajes y herramientas
+## Lenguajes y herramientas
 
 ### Lenguajes
 - Bash  
@@ -53,15 +53,15 @@ Evaluar cómo las mutaciones frecuentes de Spike afectan la estructura y el ento
 
 ---
 
-## ▶️ Cómo usar el pipeline
+## Cómo usar el pipeline
 
-### 1️⃣ Ejecutar
+### Ejecutar
 
 ```bash
 ./glycotestV2.sh -i genomas.fasta
 ```
 
-## 🧱 Scripts incluidos
+## Scripts incluidos
 
 | Script | Función |
 |--------|---------|
@@ -73,7 +73,7 @@ Evaluar cómo las mutaciones frecuentes de Spike afectan la estructura y el ento
 
 ---
 
-## 🧬 Estado del proyecto
+## Estado del proyecto
 
 ### ✔ Análisis de secuencias  
 ### ✔ Construcción de haplotipos  
@@ -85,7 +85,7 @@ Evaluar cómo las mutaciones frecuentes de Spike afectan la estructura y el ento
 
 ---
 
-## 📚 Contacto
+## Contacto
 
 **Diego Rivas Montani**  
 Laboratorio de Epidemiología Molecular y Genética (CITBM)  
