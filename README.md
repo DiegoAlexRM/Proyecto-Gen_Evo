@@ -27,18 +27,6 @@ Evaluar cómo las mutaciones frecuentes de Spike afectan la estructura y el ento
 
 ---
 
-## Datos utilizados
-
-- Secuencias de GISAID
-- Variantes analizadas: **Lambda, Gamma, Delta y Ómicron**.
-
-### Criterios de inclusión
-✔ Sin frameshift en Spike  
-✔ Sin aminoácidos ambiguos (“X”)  
-✔ Con ≥1 mutación de frecuencia ≥10%
-
----
-
 ## Lenguajes y herramientas
 
 ### Lenguajes
@@ -48,7 +36,7 @@ Evaluar cómo las mutaciones frecuentes de Spike afectan la estructura y el ento
 
 ### Herramientas externas
 - **Nextclade** — clasificación y QC  
-- **SeqKit** — filtrado y extracción  
+- **SeqKit** — filtrado y extracción  (Modificar variantes en el glycotestV2.sh)
 - **MAFFT** — alineamiento por variante  
 - **Modeller** *(in progress)*  
 - **GlycoSHIELD** *(futuro análisis glicanos)*
