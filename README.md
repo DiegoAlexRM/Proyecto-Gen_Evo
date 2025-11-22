@@ -19,6 +19,8 @@ Las mutaciones de alta frecuencia en la proteína Spike del SARS-CoV-2 coevoluci
 
 Evaluar cómo las mutaciones frecuentes de Spike afectan la estructura y el entorno tridimensional de los sitios N-glicosilados mediante haplotipos representativos y modelado estructural.
 
+---
+
 ## Flujo de trabajo
 
 ![Brutal ](https://github.com/user-attachments/assets/1657fd95-6936-440c-9b83-369de9868391)
