@@ -36,7 +36,7 @@ Evaluar cómo las mutaciones frecuentes de Spike afectan la estructura y el ento
 
 ### Herramientas externas
 - **Nextclade** — clasificación y QC  
-- **SeqKit** — filtrado y extracción  (Modificar variantes en el glycotestV2.sh)
+- **SeqKit** — filtrado y extracción  (Modificar variantes en el https://github.com/DiegoAlexRM/Proyecto-Gen_Evo/blob/main/glycotestV1.2.sh)
 - **MAFFT** — alineamiento por variante  
 - **Modeller** *(in progress)*  
 - **GlycoSHIELD** *(futuro análisis glicanos)*
