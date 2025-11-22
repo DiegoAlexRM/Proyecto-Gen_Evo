@@ -5,7 +5,7 @@
 
 En Example/ se incluye un mini-dataset (2 genomas) que muestra cómo luce la estructura de resultados final del pipeline.
 Para asegurar reproducibilidad, el pipeline debe ejecutarse con Pixi, usando el pixi.toml del repositorio.
-Este archivo fija las versiones exactas de todas las dependencias, evitando errores o comportamientos distintos entre entornos.
+Este archivo fija las versiones exactas de algunas dependencias, evitando errores o comportamientos distintos entre entornos.
 
 ---
 
