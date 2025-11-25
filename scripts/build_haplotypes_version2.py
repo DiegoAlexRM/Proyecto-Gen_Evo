@@ -36,11 +36,11 @@ mut = pd.read_csv(mut_tsv, sep="\t")
 dom = mut[mut["frecuencia(%)"] >= 10]
 
 if dom.empty:
-    print("❌ No hay mutaciones ≥10%")
+    print("No hay mutaciones ≥10%")
     sys.exit(1)
 
 dom_positions = sorted(dom["pos"].unique())
-print(f"📌 Posiciones dominantes (≥10%): {dom_positions}")
+print(f"Posiciones dominantes (≥10%): {dom_positions}")
 
 # Diccionario pos → (refAA →?) (porque en mut TSV ya viene ref_aa en mut ex: T19R)
 pos_to_ref = {}
@@ -124,8 +124,8 @@ with open(profiles_out, "w") as out:
         hap_id = f"{prefix}_hapD{i}"
         out.write(f"{hap_id}\t{perfil}\n")
 
-print("✔ Haplotipos dominantes creados")
-print(f"✔ FASTA: {fasta_out}")
-print(f"✔ Summary: {summary_out}")
-print(f"✔ IDs: {ids_out}")
-print(f"✔ Profiles: {profiles_out}")
+print(" Haplotipos dominantes creados")
+print(f" FASTA: {fasta_out}")
+print(f" Summary: {summary_out}")
+print(f" IDs: {ids_out}")
+print(f" Profiles: {profiles_out}")
