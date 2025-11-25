@@ -124,8 +124,8 @@ with open(profiles_out, "w") as out:
         hap_id = f"{prefix}_hapD{i}"
         out.write(f"{hap_id}\t{perfil}\n")
 
-print("✔ Haplotipos dominantes creados")
-print(f"✔ FASTA: {fasta_out}")
-print(f"✔ Summary: {summary_out}")
-print(f"✔ IDs: {ids_out}")
-print(f"✔ Profiles: {profiles_out}")
+print("Haplotipos dominantes creados")
+print(f"FASTA: {fasta_out}")
+print(f"Summary: {summary_out}")
+print(f"IDs: {ids_out}")
+print(f"Profiles: {profiles_out}")
