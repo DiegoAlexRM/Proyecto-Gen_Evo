@@ -36,11 +36,11 @@ mut = pd.read_csv(mut_tsv, sep="\t")
 dom = mut[mut["frecuencia(%)"] >= 10]
 
 if dom.empty:
-    print("❌ No hay mutaciones ≥10%")
+    print("No hay mutaciones ≥10%")
     sys.exit(1)
 
 dom_positions = sorted(dom["pos"].unique())
-print(f"📌 Posiciones dominantes (≥10%): {dom_positions}")
+print(f"Posiciones dominantes (≥10%): {dom_positions}")
 
 # Diccionario pos → (refAA →?) (porque en mut TSV ya viene ref_aa en mut ex: T19R)
 pos_to_ref = {}
