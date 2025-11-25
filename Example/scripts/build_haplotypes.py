@@ -35,6 +35,6 @@ with open(ids_out, "w") as f:
         hap_id = f"{prefix}_hap{i}"
         f.write(f"{hap_id}\t{','.join(ids)}\n")
 
-print(f"✔ Haplotipos generados: {len(haplos)}")
-print(f"✔ FASTA: {fasta_out}")
-print(f"✔ IDs:   {ids_out}")
+print(f"Haplotipos generados: {len(haplos)}")
+print(f"FASTA: {fasta_out}")
+print(f"IDs:   {ids_out}")
