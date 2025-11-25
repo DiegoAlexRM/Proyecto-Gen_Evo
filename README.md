@@ -17,7 +17,7 @@ Las mutaciones de alta frecuencia en la proteína Spike del SARS-CoV-2 coevoluci
 
 ## Objetivo
 
-Evaluar cómo las mutaciones frecuentes de Spike afectan la estructura y el entorno tridimensional de los sitios N-glicosilados mediante haplotipos representativos y modelado estructural.
+Evaluar la presencia estructural de glicanos con la aparición de mutaciones cercanas en la proteína Spike del SARS-CoV-2, identificando patrones recurrentes durante la evolución de variantes 
 
 ---
 
