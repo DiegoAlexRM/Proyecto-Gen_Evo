@@ -38,7 +38,7 @@ alineadas = list(SeqIO.parse(fasta_file, "fasta"))
 try:
     ref_record = next(rec for rec in alineadas if 'QHD43416.1' in rec.id)
 except StopIteration:
-    print("⚠️ No se encontró la referencia 'QHD43416.1' en el archivo.")
+    print("No se encontró la referencia 'QHD43416.1' en el archivo.")
     sys.exit(1)
 
 ref_seq = str(ref_record.seq)
@@ -59,7 +59,7 @@ for rec in alineadas:
     query_seq = str(rec.seq)
     for i, (ref_aa, q_aa) in enumerate(zip(ref_seq, query_seq), start=1):
 
-        # 👉 saltar posiciones donde la referencia tiene un gap
+        # saltar posiciones donde la referencia tiene un gap
         if ref_aa == '-':
             continue
 
