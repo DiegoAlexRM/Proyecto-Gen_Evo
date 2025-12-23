@@ -1,4 +1,4 @@
-# Análisis estructural y evolutivo de glicanos y mutaciones en Spike de SARS-CoV-2
+# Análisis evolutivo de sitios de N glicosilacion y mutaciones en Spike de SARS-CoV-2
 
 ---
 ⚠️ Nota importante
@@ -11,14 +11,27 @@ Este archivo fija las versiones exactas de algunas dependencias, evitando errore
 
 ## Hipótesis
 
-Las mutaciones de alta frecuencia en la proteína Spike del SARS-CoV-2 coevolucionan con los sitios de N-glicosilación, modificando el blindaje glicano, la accesibilidad antigénica y la estructura tridimensional de la proteína a lo largo de la evolución de las variantes.
+Las mutaciones de alta frecuencia en la proteína Spike coevolucionan con los sitios de N-glicosilación, mostrando patrones posicionales no aleatorios en términos de carga eléctrica y propiedades fisicoquímicas dentro de ventanas ±10 aminoácidos alrededor de los secuones N-X-S/T.
 
 ---
 
 ## Objetivo
 
-Evaluar la presencia estructural de glicanos con la aparición de mutaciones cercanas en la proteína Spike del SARS-CoV-2, identificando patrones recurrentes durante la evolución de variantes 
+Caracterizar la relación evolutiva entre mutaciones de alta frecuencia y sitios N-glicosilados en Spike, comparando la secuencia de referencia Wuhan con variantes posteriores, mediante análisis posicionales y fisicoquímicos.
 
+---
+
+---
+## Objetivos específicos
+
+* Detectar sitios N-X-S/T en la proteína Spike de referencia (Wuhan).
+* Identificar mutaciones de alta frecuencia en variantes (Gamma, Delta, Lambda, Omicron).
+* Comparar antes (Wuhan) vs después (variantes) en términos de:
+  -carga eléctrica
+  -polaridad
+  -cambios fisicoquímicos
+* Evaluar patrones posicionales de mutaciones dentro de ventanas ±10 aa alrededor de sitios glicosilados.
+* Identificar posiciones relativas con comportamiento conservado entre variantes.
 ---
 
 ## Flujo de trabajo
@@ -30,9 +43,9 @@ Evaluar la presencia estructural de glicanos con la aparición de mutaciones cer
 ## Lenguajes y herramientas
 
 ### Lenguajes
-- Bash  
-- Python 3 (BioPython, pandas)  
-- R (para visualización)
+- Bash (script base)
+- Python 3 (análisis de mutaciones, haplotipos y secuencias)  
+- R (visualización)
 
 ### Herramientas externas
 - **Nextclade** — clasificación y QC  
@@ -50,6 +63,7 @@ Evaluar la presencia estructural de glicanos con la aparición de mutaciones cer
 ```bash
 ./glycotestV2.sh -i genomas.fasta
 ```
+* Para visualización de datos ejecutar Rcode_graphs_code.Rmd en Rstudio
 
 ## Scripts incluidos
 
@@ -57,21 +71,25 @@ Evaluar la presencia estructural de glicanos con la aparición de mutaciones cer
 |--------|---------|
 | **analisis_mut_aa.py** | Mutaciones AA + frecuencia + cambios fisicoquímicos |
 | **crear_sitios_glyc_ref.py** | Detecta N-X-S/T en Spike Wuhan |
+| **analisis_nglyc.py** | conservación de sitios potenciales N-X-S/T |
+| **correlate_mut_glyc.py** | Correlaciona mutaciones aminoacídicas con su proximidad a sitios N-X-S/T, cuantificando mutaciones dentro de ventanas definidas de 10aa |
 | **build_haplotypes.py** | Haplotipos reales |
 | **build_haplotypes_version2.py** | Haplotipos dominantes (≥10%) |
 | **split_haplotypes_for_modeling.py** | FASTA individuales para modelaje |
-
+| **Rcode_graphs_code.Rmd** | Visualización de datos |
 ---
 
 ## Estado del proyecto
 
-### ✔ Análisis de secuencias  
-### ✔ Construcción de haplotipos  
-### ✔ Limpieza y filtrado  
-### ✔ Generación de secuencias finales  
-### 🔧 Modelado estructural *(in progress)*  
-### 🔧 Dinámica de glicosilación *(in progress)*  
-### 🔧 Proximidad mutación-glicano *(in progress)*  
+### Análisis de secuencias  
+### Construcción de haplotipos  
+### Limpieza y filtrado  
+### Generación de secuencias finales 
+### Visualización de datos
+### Proximidad mutación-glicano (análisis posicional)
+### Modelado estructural *(in progress)*  
+### Dinámica de glicosilación *(in progress)*  
+### Proximidad mutación-glicano *(in progress)*  
 
 ---
 
