@@ -1,0 +1,932 @@
+---
+title: R graph - For evolution
+author: Diego Rivas 
+---
+
+```{r, Cargar paquetes}
+#install.packages(c("readr","dplyr","ggplot2","purrr","tidyr","scales"))
+#install.packages("tidytext")
+library(tidytext)
+```
+
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(purrr)
+library(tidyr)
+library(scales)
+library(tidytext)
+
+base_dir <- "C:/Users/Asus/Desktop/MAESTRIA/EVOLUCION/summary_tables"
+fig_dir  <- file.path(base_dir, "figures")
+dir.create(fig_dir, showWarnings = FALSE)
+
+variants <- c("Lambda", "Gamma", "Delta", "Omicron")
+
+mut_all <- map_dfr(variants, function(v){
+  read_tsv(file.path(base_dir, paste0("mutaciones_con_ventana_nglyc_", v, "_HAPDOM.tsv")),
+           show_col_types = FALSE) %>%
+    mutate(variant = v)
+}) %>%
+  rename(frecuencia_pct = `frecuencia(%)`,
+         en_ventana = en_ventana_glicosilada) %>%
+  mutate(
+    en_ventana = factor(tolower(en_ventana), levels = c("no", "si")),
+    pos = as.integer(pos),
+    frecuencia_pct = as.numeric(frecuencia_pct)
+  )
+
+ng_all <- map_dfr(variants, function(v){
+  read_tsv(file.path(base_dir, paste0("nglyc_", v, "_ALL.tsv")),
+           show_col_types = FALSE) %>%
+    mutate(variant = v)
+}) %>%
+  mutate(
+    sitio_pos = as.integer(sitio_pos),
+    mutaciones_ventana = as.integer(mutaciones_ventana),
+    conservado = factor(conservado, levels = c("No", "Si")),
+    mutacion_directa = factor(mutacion_directa, levels = c("No", "Si"))
+  )
+```
+
+```{r}
+# Orden evolutivo de variantes
+mut_all$variant <- factor(
+  mut_all$variant,
+  levels = c("Lambda", "Gamma", "Delta", "Omicron")
+)
+
+p_final <- mut_all %>%
+  filter(frecuencia_pct >= 10) %>%
+  distinct(variant, pos, mut, en_ventana) %>%   # mutaciones únicas
+  count(variant, en_ventana) %>%
+  ggplot(aes(x = variant, y = n, fill = en_ventana)) +
+  geom_col(width = 0.7) +
+  scale_fill_manual(
+    values = c("no" = "#E64B35", "si" = "#4DBBD5"),
+    labels = c("Fuera de ventana", "En ventana")
+  ) +
+  labs(
+    title = "Mutaciones únicas frecuentes (≥10%) cerca de sitios NxS/T",
+    subtitle = "Ventana ±10 aa alrededor del residuo N",
+    x = "Variante",
+    y = "Número de mutaciones únicas",
+    fill = ""
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold"),
+    legend.position = "top"
+  )
+
+p_final
+```
+
+
+```{r}
+library(tidytext)
+base_unique_hf <- mut_all %>%
+  filter(frecuencia_pct >= 10, en_ventana == "si") %>%
+  distinct(variant, pos, mut, en_ventana)
+
+```
+
+```{r}
+top10_df <- base_unique_hf %>%
+  count(variant, pos, sort = TRUE) %>%
+  group_by(variant) %>%
+  slice_max(n, n = 10) %>%
+  ungroup()
+
+p_top10_unique_hf <- ggplot(
+  top10_df,
+  aes(x = n, y = reorder_within(factor(pos), n, variant))
+) +
+  geom_col(fill = "#4DBBD5") +
+  facet_wrap(~variant, scales = "free_y") +
+  scale_y_reordered() +
+  labs(
+    title = "Top 10 posiciones (mutaciones únicas frecuentes ≥10%) en ventana ±10 de NxS/T",
+    x = "Número de mutaciones únicas",
+    y = "Posición AA"
+  ) +
+  theme_minimal()
+
+p_top10_unique_hf
+
+
+```
+
+```{r}
+ng_all <- ng_all %>%
+  mutate(sitio_pos = factor(sitio_pos, levels = sort(unique(sitio_pos))))
+cols_bin <- c("No" = "#E64B35", "Si" = "#4DBBD5")
+
+```
+
+```{r}
+p5_clean <- ng_all %>%
+  count(variant, sitio_pos, conservado) %>%
+  group_by(variant, sitio_pos) %>%
+  mutate(prop = n / sum(n)) %>%
+  ungroup() %>%
+  filter(conservado == "Si") %>%   # 👈 solo la señal
+  ggplot(aes(x = sitio_pos, y = prop)) +
+  geom_col(fill = "#4DBBD5") +
+  facet_wrap(~variant, ncol = 1) +
+  scale_y_continuous(labels = percent) +
+  labs(
+    title = "Conservación de sitios NxS/T potenciales",
+    subtitle = "Proporción de secuones conservados por sitio (ALL secuencias)",
+    x = "Posición del sitio NxS/T (N)",
+    y = "Secuencias conservadas (%)"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90),
+    plot.title = element_text(face = "bold")
+  )
+
+p5_clean
+
+```
+
+
+```{r}
+p6_clean <- ng_all %>%
+  group_by(variant, sitio_pos) %>%
+  summarise(
+    mean_mut = mean(mutaciones_ventana, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  ggplot(aes(x = sitio_pos, y = mean_mut)) +
+  geom_col(fill = "#4DBBD5") +
+  facet_wrap(~variant, ncol = 1) +
+  labs(
+    title = "Carga mutacional promedio alrededor de sitios NxS/T",
+    subtitle = "Media de mutaciones en ventanas ±10 aa",
+    x = "Posición del sitio NxS/T (N)",
+    y = "Mutaciones promedio en ventana"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90),
+    plot.title = element_text(face = "bold")
+  )
+
+p6_clean
+
+```
+
+```{r}
+#install.packages(c("dplyr","purrr","ggplot2","ggseqlogo","readr","stringr","tidyr"))
+#if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+#BiocManager::install("Biostrings")
+```
+
+```{r}
+library(Biostrings)
+library(dplyr)
+library(purrr)
+library(ggplot2)
+library(ggseqlogo)
+library(readr)
+library(stringr)
+library(tidyr)
+```
+
+```{r}
+# =========================
+# 2) Funciones auxiliares
+# =========================
+
+# Mapear posición en referencia SIN gaps -> índice en el alineamiento
+refpos_to_alnidx <- function(ref_aln_string, ref_pos_ungapped){
+  chars <- strsplit(ref_aln_string, "")[[1]]
+  csum  <- cumsum(chars != "-")
+  idx <- which(csum == ref_pos_ungapped)[1]
+  if (length(idx) == 0 || is.na(idx)) return(NA_integer_)
+  idx
+}
+
+# Extraer ventana ±w alrededor de un índice de alineamiento para TODAS las secuencias
+extract_windows <- function(aln_set, center_idx, w = 10, drop_gaps = FALSE){
+  if (is.na(center_idx)) return(character(0))
+  start <- center_idx - w
+  end   <- center_idx + w
+  if (start < 1 || end > width(aln_set)[1]) return(character(0))
+
+  win <- as.character(subseq(aln_set, start = start, end = end))
+
+  if (drop_gaps) {
+    win <- gsub("-", "", win)
+  }
+
+  # quedarnos con ventanas no vacías
+  win <- win[nchar(win) > 0]
+  win
+}
+# =========================
+# 3) Parámetros y sitios NxS/T
+# =========================
+base_results <- "C:/Users/Asus/Desktop/MAESTRIA/EVOLUCION"
+variants <- c("Lambda","Gamma","Delta","Omicron")
+
+out_dir <- file.path(base_results, "logos")
+dir.create(out_dir, showWarnings = FALSE)
+
+# Tomar sitios NxS/T desde tus tablas (NO requiere scripts/)
+nglyc_file <- file.path(base_results, "summary_tables", "nglyc_Lambda_ALL.tsv")
+stopifnot(file.exists(nglyc_file))
+
+sitios <- read_tsv(nglyc_file, show_col_types = FALSE) %>%
+  distinct(sitio_pos) %>%
+  mutate(sitio_pos = as.integer(sitio_pos)) %>%
+  arrange(sitio_pos)
+# =========================
+# 4) Generar logos (ventana ±10)
+# =========================
+for (v in variants) {
+
+  aln_path <- file.path(base_results, "results", v, paste0(v, "_alineado.fasta"))
+  if (!file.exists(aln_path)) {
+    message("No existe: ", aln_path)
+    next
+  }
+
+  aln <- readAAStringSet(aln_path)
+
+  # referencia = primer registro (como en tu pipeline)
+  ref_aln <- as.character(aln[[1]])
+
+  for (pos in sitios$sitio_pos) {
+
+    center_idx <- refpos_to_alnidx(ref_aln, pos)
+    if (is.na(center_idx)) next
+
+    # Ventanas con gaps (mejor para logo porque quedan del mismo largo)
+    wins <- extract_windows(aln, center_idx, w = 10, drop_gaps = FALSE)
+
+    # Filtrar ventanas con demasiados gaps (ruido)
+    wins <- wins[str_count(wins, "-") <= 5]
+
+    # Quitar referencia (primera secuencia)
+    if (length(wins) >= 2) wins <- wins[-1]
+
+    # Si quedan pocas secuencias, saltar
+    if (length(wins) < 5) next
+
+    p <- ggseqlogo(wins, method = "bits") +
+      ggtitle(paste0(v, " | sitio N=", pos, " | ventana ±10")) +
+      theme_minimal()
+
+    ggsave(
+      filename = file.path(out_dir, paste0("logo_", v, "_N", pos, "_pm10.png")),
+      plot = p,
+      width = 10,
+      height = 3,
+      dpi = 300
+    )
+  }
+}
+
+message("✅ Listo. Logos guardados en: ", out_dir)
+```
+
+
+```{r, agrupación de cambios fisicoquimicos}
+library(dplyr)
+library(readr)
+library(stringr)
+library(tidyr)
+library(ggplot2)
+library(purrr)
+library(scales)
+
+# =========================
+# Parámetros
+# =========================
+base_dir <- "C:/Users/Asus/Desktop/MAESTRIA/EVOLUCION"
+variants <- c("Lambda","Gamma","Delta","Omicron")
+freq_thr <- 10
+
+# =========================
+# Cargar todas las variantes
+# =========================
+mut_all <- map_dfr(variants, function(v){
+  f <- file.path(base_dir, "summary_tables", paste0("mutaciones_con_ventana_nglyc_", v, "_HAPDOM.tsv"))
+  read_tsv(f, show_col_types = FALSE) %>%
+    mutate(variant = v)
+})
+
+# =========================
+# Filtrar: HF + ventana glicosilada + mut únicas
+# =========================
+mut_filt <- mut_all %>%
+  filter(
+    `frecuencia(%)` >= freq_thr,
+    en_ventana_glicosilada == "si"
+  ) %>%
+  distinct(variant, pos, mut, .keep_all = TRUE)
+
+# =========================
+# Separar polaridad y carga
+# =========================
+mut_long <- mut_filt %>%
+  mutate(
+    polar_pre  = str_trim(str_split(polaridad_cambio, ",", simplify = TRUE)[,1]),
+    polar_post = str_trim(str_split(polaridad_cambio, ",", simplify = TRUE)[,2]),
+    carga_pre  = str_trim(str_split(carga_cambio, ",", simplify = TRUE)[,1]),
+    carga_post = str_trim(str_split(carga_cambio, ",", simplify = TRUE)[,2])
+  )
+
+# =========================
+# === FIGURA 1: POLARIDAD por VARIANTE ===
+# =========================
+polar_var <- mut_long %>%
+  select(variant, polar_pre, polar_post) %>%
+  pivot_longer(
+    cols = c(polar_pre, polar_post),
+    names_to = "estado",
+    values_to = "polaridad"
+  ) %>%
+  mutate(
+    estado = ifelse(estado == "polar_pre", "Antes", "Después")
+  )
+
+p1 <- ggplot(polar_var, aes(x = variant, fill = polaridad)) +
+  geom_bar(position = "fill") +
+  facet_wrap(~estado) +
+  scale_y_continuous(labels = percent) +
+  labs(
+    title = "Polaridad de mutaciones HF en ventanas glicosiladas",
+    x = "Variante",
+    y = "Proporción",
+    fill = "Polaridad"
+  ) +
+  theme_minimal()
+
+ggsave(file.path(base_dir, "fig1_polaridad_por_variante.png"),
+       p1, width = 9, height = 5, dpi = 300)
+p1
+
+# =========================
+# === FIGURA 2: CARGA por VARIANTE ===
+# =========================
+carga_var <- mut_long %>%
+  select(variant, carga_pre, carga_post) %>%
+  pivot_longer(
+    cols = c(carga_pre, carga_post),
+    names_to = "estado",
+    values_to = "carga"
+  ) %>%
+  mutate(
+    estado = ifelse(estado == "carga_pre", "Antes", "Después")
+  )
+
+p2 <- ggplot(carga_var, aes(x = variant, fill = carga)) +
+  geom_bar(position = "fill") +
+  facet_wrap(~estado) +
+  scale_y_continuous(labels = percent) +
+  labs(
+    title = "Carga eléctrica de mutaciones HF en ventanas glicosiladas",
+    x = "Variante",
+    y = "Proporción",
+    fill = "Carga"
+  ) +
+  theme_minimal()
+
+ggsave(file.path(base_dir, "fig2_carga_por_variante.png"),
+       p2, width = 9, height = 5, dpi = 300)
+p2
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(scales)
+
+# =========================
+# FIGURA: CARGA ANTES (Wuhan) vs DESPUÉS (Variantes) por sitio
+# =========================
+
+carga_site_wuhan <- mut_long %>%
+  select(variant, pos, carga_pre, carga_post) %>%
+  pivot_longer(
+    cols = c(carga_pre, carga_post),
+    names_to = "estado",
+    values_to = "carga"
+  ) %>%
+  mutate(
+    grupo = ifelse(estado == "carga_pre", "Wuhan", variant),
+    estado = ifelse(estado == "carga_pre", "Antes (Wuhan)", "Después")
+  ) %>%
+  filter(!is.na(carga), carga != "") %>%
+  count(pos, grupo, estado, carga, name = "n") %>%
+  group_by(pos, grupo, estado) %>%
+  mutate(prop = n / sum(n)) %>%
+  ungroup() %>%
+  mutate(
+    grupo = factor(grupo, levels = c("Wuhan","Delta","Gamma","Lambda","Omicron"))
+  )
+
+p_carga_site <- ggplot(
+  carga_site_wuhan,
+  aes(x = grupo, y = prop, fill = carga)
+) +
+  geom_col(width = 0.8, color = "black", linewidth = 0.25) +
+  facet_wrap(~pos, ncol = 4, scales = "fixed") +
+  scale_y_continuous(labels = percent, expand = expansion(mult = c(0, 0.02))) +
+  labs(
+    title = "Carga eléctrica de mutaciones HF en ventanas NxS/T\nWuhan (ANTES) vs variantes (DESPUÉS)",
+    x = "Grupo",
+    y = "Proporción",
+    fill = "Carga"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 0.8),
+    strip.text = element_text(face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+ggsave(
+  file.path(base_dir, "fig4B_carga_Wuhan_vs_variantes_por_sitio.png"),
+  p_carga_site,
+  width = 14,
+  height = 9,
+  dpi = 300
+)
+
+p_carga_site
+
+```
+
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(scales)
+
+# =========================
+# FIGURA: CARGA ANTES (Wuhan) vs DESPUÉS (Variantes) por sitio
+# =========================
+
+carga_site_wuhan <- mut_long %>%
+  select(variant, pos, carga_pre, carga_post) %>%
+  pivot_longer(
+    cols = c(carga_pre, carga_post),
+    names_to = "estado",
+    values_to = "carga"
+  ) %>%
+  mutate(
+    grupo = ifelse(estado == "carga_pre", "Wuhan", variant),
+    estado = ifelse(estado == "carga_pre", "Antes (Wuhan)", "Después")
+  ) %>%
+  filter(!is.na(carga), carga != "") %>%
+  count(pos, grupo, estado, carga, name = "n") %>%
+  group_by(pos, grupo, estado) %>%
+  mutate(prop = n / sum(n)) %>%
+  ungroup() %>%
+  mutate(
+    grupo = factor(grupo, levels = c("Wuhan","Delta","Gamma","Lambda","Omicron"))
+  )
+
+p_carga_site <- ggplot(
+  carga_site_wuhan,
+  aes(x = grupo, y = prop, fill = carga)
+) +
+  geom_col(width = 0.8, color = "black", linewidth = 0.25) +
+  facet_wrap(~pos, ncol = 4, scales = "fixed") +
+  scale_y_continuous(labels = percent, expand = expansion(mult = c(0, 0.02))) +
+  labs(
+    title = "Carga eléctrica de mutaciones HF en ventanas NxS/T\nWuhan (ANTES) vs variantes (DESPUÉS)",
+    x = "Grupo",
+    y = "Proporción",
+    fill = "Carga"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 0.8),
+    strip.text = element_text(face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+ggsave(
+  file.path(base_dir, "fig4B_carga_Wuhan_vs_variantes_por_sitio.png"),
+  p_carga_site,
+  width = 14,
+  height = 9,
+  dpi = 300
+)
+
+p_carga_site
+
+```
+
+```{r}
+library(dplyr)
+library(readr)
+library(tidyr)
+library(purrr)
+library(ggplot2)
+library(scales)
+
+# =========================
+# === CARGA DE DATOS ===
+# =========================
+base_dir <- "C:/Users/Asus/Desktop/MAESTRIA/EVOLUCION/summary_tables"
+variants <- c("Delta","Gamma","Lambda","Omicron")
+
+mut_all <- map_dfr(variants, function(v){
+  read_tsv(
+    file.path(base_dir, paste0("mutaciones_con_ventana_nglyc_", v, "_HAPDOM.tsv")),
+    show_col_types = FALSE
+  ) %>% mutate(variant = v)
+})
+
+# Renombrar frecuencia(%) -> freq  (base R, ya sabes que funciona)
+colnames(mut_all)[colnames(mut_all) == "frecuencia(%)"] <- "freq"
+
+# Limpieza clave
+mut_all <- mut_all %>%
+  mutate(
+    pos = as.integer(pos),
+    freq = as.numeric(freq),
+    en_ventana_glicosilada = tolower(en_ventana_glicosilada)
+  )
+
+# Filtrar mutaciones HF en ventanas NxS/T
+mut_hf <- mut_all %>%
+  filter(en_ventana_glicosilada == "si", freq >= 10)
+
+# Separar carga (antes / después)
+mut_long <- mut_hf %>%
+  separate(carga_cambio,
+           into = c("carga_pre","carga_post"),
+           sep = "\\s*,\\s*")
+
+```
+
+```{r}
+# =========================
+# === FIG 6: BARRAS POSICIONALES (CARGA DESPUÉS) ===
+# =========================
+
+fig6_df <- mut_posrel_uniq %>%
+  count(variant, pos_rel, carga_post) %>%
+  group_by(variant, pos_rel) %>%
+  mutate(prop = n / sum(n)) %>%
+  ungroup()
+
+p6 <- ggplot(fig6_df, aes(x = factor(pos_rel), y = prop, fill = carga_post)) +
+  geom_col(position = "fill", color = "black", linewidth = 0.2) +
+  facet_wrap(~variant, ncol = 1) +
+  scale_y_continuous(labels = percent) +
+  labs(
+    title = "FIG 6 | Distribución de carga por posición relativa (DESPUÉS)",
+    x = "Posición relativa (−10 a +10)",
+    y = "Proporción",
+    fill = "Carga después"
+  ) +
+  theme_minimal() +
+  theme(panel.border = element_rect(color="black", fill=NA))
+
+p6
+
+```
+
+EXTRA
+
+```{r}
+library(Biostrings)
+library(dplyr)
+library(readr)
+library(stringr)
+library(tidyr)
+library(purrr)
+library(ggplot2)
+library(scales)
+
+# =========================
+# Parámetros
+# =========================
+base_results <- "C:/Users/Asus/Desktop/MAESTRIA/EVOLUCION"
+variants <- c("Lambda","Gamma","Delta","Omicron")
+w <- 10
+ventana <- -w:w
+
+# =========================
+# Diccionario de CARGA por aminoácido
+# =========================
+aa_carga <- c(
+  D="negativa", E="negativa",
+  K="positiva", R="positiva", H="positiva",
+  A="neutra", V="neutra", L="neutra", I="neutra", M="neutra",
+  F="neutra", Y="neutra", W="neutra",
+  P="neutra", G="neutra",
+  S="neutra", T="neutra", C="neutra", N="neutra", Q="neutra"
+)
+
+# fallback para cosas raras (X, -, etc.)
+get_carga <- function(aa){
+  ifelse(aa %in% names(aa_carga), unname(aa_carga[aa]), NA_character_)
+}
+
+# =========================
+# Función: refpos ungapped -> índice alineamiento
+# =========================
+refpos_to_alnidx <- function(ref_aln_string, ref_pos_ungapped){
+  chars <- strsplit(ref_aln_string, "")[[1]]
+  csum  <- cumsum(chars != "-")
+  idx <- which(csum == ref_pos_ungapped)[1]
+  if (length(idx) == 0 || is.na(idx)) return(NA_integer_)
+  idx
+}
+
+# =========================
+# Sitios NxS/T (lista maestra)
+# =========================
+nglyc_file <- file.path(base_results, "summary_tables", "nglyc_Lambda_ALL.tsv")
+stopifnot(file.exists(nglyc_file))
+
+sitios <- read_tsv(nglyc_file, show_col_types = FALSE) %>%
+  distinct(sitio_pos) %>%
+  mutate(sitio_pos = as.integer(sitio_pos)) %>%
+  arrange(sitio_pos) %>%
+  pull(sitio_pos)
+
+# =========================
+# Construir tabla ALL: carga por posición relativa
+# =========================
+fig6_all <- vector("list", length(variants))
+names(fig6_all) <- variants
+
+for (v in variants) {
+
+  aln_path <- file.path(base_results, "results", v, paste0(v, "_alineado.fasta"))
+  if (!file.exists(aln_path)) {
+    message("❌ No existe: ", aln_path)
+    next
+  }
+
+  aln <- readAAStringSet(aln_path)
+  ref <- as.character(aln[[1]])
+
+  rows <- list()
+
+  for (pos in sitios) {
+
+    center <- refpos_to_alnidx(ref, pos)
+    if (is.na(center)) next
+
+    start <- center - w
+    end   <- center + w
+    if (start < 1 || end > nchar(ref)) next
+
+    # para cada secuencia (excluye referencia)
+    for (i in 2:length(aln)) {
+
+      win_q <- substr(as.character(aln[[i]]), start, end)
+      aa_vec <- strsplit(win_q, "")[[1]]
+
+      # registrar TODAS las posiciones (menos X/-)
+      for (k in seq_along(ventana)) {
+        aa <- aa_vec[k]
+        if (aa %in% c("-", "X")) next
+
+        carga <- get_carga(aa)
+        if (is.na(carga)) next
+
+        rows[[length(rows) + 1]] <- data.frame(
+          variant = v,
+          sitio_pos = pos,
+          pos_rel = ventana[k],
+          carga = carga
+        )
+      }
+    }
+  }
+
+  if (length(rows) == 0) next
+  fig6_all[[v]] <- bind_rows(rows)
+  message("✅ ", v, " listo (rows=", nrow(fig6_all[[v]]), ")")
+}
+
+fig6_all_df <- bind_rows(fig6_all)
+
+# =========================
+# FIG 6B: Distribución ALL posiciones
+# =========================
+fig6B_df <- fig6_all_df %>%
+  count(variant, pos_rel, carga, name = "n") %>%
+  group_by(variant, pos_rel) %>%
+  mutate(prop = n/sum(n)) %>%
+  ungroup()
+
+p6B <- ggplot(fig6B_df, aes(x = pos_rel, y = prop, fill = carga)) +
+  geom_col(width = 0.9, color = "black", linewidth = 0.2) +
+  facet_wrap(~variant, ncol = 1) +
+  scale_x_continuous(breaks = seq(-10, 10, 2)) +
+  scale_y_continuous(labels = percent, expand = expansion(mult = c(0, 0.02))) +
+  labs(
+    title = "FIG 6B | Distribución de carga por posición relativa (ALL, ventana ±10)",
+    x = "Posición relativa al N del sitio",
+    y = "Proporción",
+    fill = "Carga"
+  ) +
+  theme_minimal() +
+  theme(panel.border = element_rect(color="black", fill=NA))
+
+# guardar
+out_png <- file.path(base_results, "fig6B_carga_ALL_posiciones.png")
+ggsave(out_png, p6B, width = 10, height = 7, dpi = 300)
+
+p6B
+message("✅ Guardado: ", out_png)
+
+```
+
+EXTRA WUHAN
+
+```{r}
+library(Biostrings)
+library(dplyr)
+library(purrr)
+library(stringr)
+library(tidyr)
+library(ggplot2)
+library(scales)
+
+# =========================
+# 0) Helpers (usa tus funciones si ya las tienes)
+# =========================
+refpos_to_alnidx <- function(ref_aln_string, ref_pos_ungapped){
+  chars <- strsplit(ref_aln_string, "")[[1]]
+  csum  <- cumsum(chars != "-")
+  idx <- which(csum == ref_pos_ungapped)[1]
+  if (length(idx) == 0 || is.na(idx)) return(NA_integer_)
+  idx
+}
+
+# Mapa AA -> carga
+aa_carga <- list(
+  D="negativa", E="negativa",
+  K="positiva", R="positiva", H="positiva",
+  A="neutra", V="neutra", I="neutra", L="neutra", M="neutra", F="neutra", W="neutra", P="neutra", G="neutra",
+  S="neutra", T="neutra", N="neutra", Q="neutra", Y="neutra", C="neutra"
+)
+
+# =========================
+# 1) Parámetros / inputs
+# =========================
+base_results <- "C:/Users/Asus/Desktop/MAESTRIA/EVOLUCION"
+variants <- c("Lambda","Gamma","Delta","Omicron")
+
+# sitios NxS/T (tomas de tu tabla)
+sitios <- readr::read_tsv(
+  file.path(base_results, "summary_tables", "nglyc_Lambda_ALL.tsv"),
+  show_col_types = FALSE
+) %>%
+  distinct(sitio_pos) %>%
+  mutate(sitio_pos = as.integer(sitio_pos)) %>%
+  arrange(sitio_pos)
+
+# =========================
+# 2) Wuhan por variante (Wuhan = seq 1 del alineamiento de ESA variante)
+#    *Esto es suficiente porque es la misma referencia en tus alineamientos*
+# =========================
+w <- 10
+ventana <- -w:w
+
+wuhan_all <- map_dfr(variants, function(v){
+
+  aln_path <- file.path(base_results, "results", v, paste0(v, "_alineado.fasta"))
+  aln <- readAAStringSet(aln_path)
+
+  ref_aln <- as.character(aln[[1]])  # Wuhan en tu pipeline
+
+  map_dfr(sitios$sitio_pos, function(pos){
+
+    center <- refpos_to_alnidx(ref_aln, pos)
+    if (is.na(center)) return(NULL)
+    if (center - w < 1 || center + w > nchar(ref_aln)) return(NULL)
+
+    win_ref <- strsplit(substr(ref_aln, center-w, center+w), "")[[1]]
+
+    tibble(
+      variant = v,
+      sitio_pos = pos,
+      pos_rel = ventana,
+      aa = win_ref
+    ) %>%
+      filter(!(aa %in% c("-", "X", ""))) %>%
+      mutate(carga = unlist(aa_carga[aa])) %>%
+      filter(!is.na(carga))
+  })
+})
+
+# =========================
+# 3) Resumen Wuhan: proporciones por posición relativa
+# =========================
+fig6_wuhan <- wuhan_all %>%
+  count(pos_rel, carga, name = "n") %>%
+  group_by(pos_rel) %>%
+  mutate(prop = n / sum(n)) %>%
+  ungroup()
+
+# =========================
+# 4) Plot Wuhan (FIG 6 Wuhan)
+# =========================
+p_wuhan <- ggplot(fig6_wuhan, aes(x = factor(pos_rel), y = prop, fill = carga)) +
+  geom_col(position = "fill", color = "black", linewidth = 0.2) +
+  scale_y_continuous(labels = percent) +
+  labs(
+    title = "FIG 6 (Wuhan) | Distribución de carga por posición relativa (ventana ±10)",
+    x = "Posición relativa (−10 a +10)",
+    y = "Proporción",
+    fill = "Carga (Wuhan)"
+  ) +
+  theme_minimal() +
+  theme(panel.border = element_rect(color="black", fill=NA))
+
+p_wuhan
+
+
+
+```
+
+```{r}
+fig6_var <- fig6_all_df %>%
+  count(variant, pos_rel, carga, name="n") %>%
+  group_by(variant, pos_rel) %>%
+  mutate(prop = n/sum(n)) %>%
+  ungroup() %>%
+  mutate(grupo = variant)
+
+fig6_wu <- fig6_wuhan %>%
+  mutate(grupo = "Wuhan")
+
+fig6_comp <- bind_rows(
+  fig6_wu %>% select(grupo, pos_rel, carga, prop),
+  fig6_var %>% select(grupo, pos_rel, carga, prop)
+) %>%
+  mutate(grupo = factor(grupo, levels = c("Wuhan","Delta","Gamma","Lambda","Omicron")))
+
+p_comp <- ggplot(fig6_comp, aes(x=factor(pos_rel), y=prop, fill=carga)) +
+  geom_col(position="fill", color="black", linewidth=0.2) +
+  facet_wrap(~grupo, ncol=1) +
+  scale_y_continuous(labels=percent) +
+  labs(
+    title="FIG 6C | Carga por posición relativa: Wuhan vs variantes (ALL, ventana ±10)",
+    x="Posición relativa (−10 a +10)",
+    y="Proporción",
+    fill="Carga"
+  ) +
+  theme_minimal() +
+  theme(panel.border = element_rect(color="black", fill=NA))
+
+p_comp
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

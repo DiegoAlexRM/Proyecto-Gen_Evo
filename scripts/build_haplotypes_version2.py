@@ -1,21 +1,3 @@
-#!/usr/bin/env python3
-"""
-build_haplotypes_version2.py
---------------------------------------
-Construye haplotipos usando SOLO las mutaciones dominantes (≥10 %).
-
-Entrada:
-  1) FASTA limpio (sin gaps), solo secuencias relevantes
-  2) TSV de mutaciones (mutaciones_variante.tsv)
-  3) FASTA alineado con referencia (para leer aminoácidos reales)
-
-Salida:
-  - <prefix>_haplotypes_dom.fasta
-  - <prefix>_haplotypes_dom_summary.tsv
-  - <prefix>_haplotypes_dom_ids.tsv
-  - <prefix>_haplotypes_dom_profiles.tsv
-"""
-
 import sys
 import pandas as pd
 from Bio import SeqIO
@@ -36,25 +18,38 @@ mut = pd.read_csv(mut_tsv, sep="\t")
 dom = mut[mut["frecuencia(%)"] >= 10]
 
 if dom.empty:
-    print("No hay mutaciones ≥10%")
+    print(" No hay mutaciones ≥10%")
     sys.exit(1)
 
 dom_positions = sorted(dom["pos"].unique())
-print(f"Posiciones dominantes (≥10%): {dom_positions}")
+print(f" Posiciones dominantes (≥10%): {dom_positions}")
 
-# Diccionario pos → (refAA →?) (porque en mut TSV ya viene ref_aa en mut ex: T19R)
+# Diccionario pos → refAA
 pos_to_ref = {}
 for _, row in dom.iterrows():
-    mut_str = row["mut"]  # ejemplo: "T19R"
-    ref_aa = mut_str[0]
-    pos    = int(row["pos"])
+    mut_str = row["mut"]  # "T19R"
+    ref_aa  = mut_str[0]
+    pos     = int(row["pos"])
     pos_to_ref[pos] = ref_aa
 
 # ==============================
-# 2. Leer FASTA limpio
+# 2. Leer FASTA limpio Y FILTRAR secuencias con X
 # ==============================
-records = list(SeqIO.parse(clean_fasta, "fasta"))
-print(f"📄 Secuencias cargadas: {len(records)}")
+all_records = list(SeqIO.parse(clean_fasta, "fasta"))
+records = []
+
+for rec in all_records:
+    seq = str(rec.seq)
+    if "X" in seq:
+        print(f" Secuencia ignorada (contiene X): {rec.id}")
+        continue
+    records.append(rec)
+
+print(f" Secuencias finales sin X: {len(records)}")
+
+if len(records) == 0:
+    print(" Todas las secuencias tenían X. No se puede continuar.")
+    sys.exit(1)
 
 # ==============================
 # 3. Construir perfiles dominantes
@@ -71,11 +66,9 @@ for rec in records:
         q_aa = seq[pos - 1]
 
         if q_aa == ref_aa:
-            mut_str = f"{ref_aa}{pos}{ref_aa}"   # sin mutación dominante
+            perfil.append(f"{ref_aa}{pos}{ref_aa}")
         else:
-            mut_str = f"{ref_aa}{pos}{q_aa}"
-
-        perfil.append(mut_str)
+            perfil.append(f"{ref_aa}{pos}{q_aa}")
 
     key = ";".join(perfil)
     haplos[key].append(rec.id)
@@ -84,16 +77,18 @@ for rec in records:
 # 4. Escribir FASTA de representantes
 # ==============================
 fasta_out = f"{prefix}_haplotypes_dom.fasta"
+record_dict = SeqIO.to_dict(records)
+
 with open(fasta_out, "w") as out:
     for i, (perfil, ids) in enumerate(haplos.items(), 1):
         hap_id = f"{prefix}_hapD{i}"
-        rep_seq = str(SeqIO.to_dict(records)[ids[0]].seq)
+        rep_seq = str(record_dict[ids[0]].seq)
 
         out.write(f">{hap_id}\n{rep_seq}\n")
         haplo_profiles[hap_id] = perfil
 
 # ==============================
-# 5. Resumen TSV
+# 5. Summary TSV
 # ==============================
 summary_out = f"{prefix}_haplotypes_dom_summary.tsv"
 with open(summary_out, "w") as out:
@@ -115,7 +110,7 @@ with open(ids_out, "w") as out:
         out.write(f"{hap_id}\t{','.join(ids)}\n")
 
 # ==============================
-# 7. Perfiles completos (opcional)
+# 7. Perfiles completos
 # ==============================
 profiles_out = f"{prefix}_haplotypes_dom_profiles.tsv"
 with open(profiles_out, "w") as out:

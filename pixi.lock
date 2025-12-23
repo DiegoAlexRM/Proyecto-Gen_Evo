@@ -1,0 +1,17 @@
+version: 6
+environments:
+  default:
+    channels:
+    - url: https://conda.anaconda.org/conda-forge/
+    - url: https://conda.anaconda.org/bioconda/
+    packages:
+      linux-64:
+      - conda: https://conda.anaconda.org/bioconda/linux-64/nextclade-3.17.0-h9ee0642_0.conda
+packages:
+- conda: https://conda.anaconda.org/bioconda/linux-64/nextclade-3.17.0-h9ee0642_0.conda
+  sha256: 0573efb2b89ff728c38583f73a99ec1e8e2c0c5731c405554a2bc043f21a9b1d
+  md5: 6403291e41000f47b65a67a42f91d7ac
+  license: MIT
+  license_family: MIT
+  size: 3812190
+  timestamp: 1757420260663

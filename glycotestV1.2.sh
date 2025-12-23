@@ -45,7 +45,7 @@ while [[ $# -gt 0 ]]; do
             usage
             ;;
         *)
-            echo "Opción desconocida: $1"
+            echo " Opción desconocida: $1"
             usage
             ;;
     esac
@@ -59,24 +59,24 @@ fi
 mkdir -p rawdata results scripts results/aa_analysis
 
 echo "=========================================="
-echo "1 Descargando dataset Nextclade..."
+echo "1️ Descargando dataset Nextclade..."
 pixi run nextclade dataset get --name 'sars-cov-2' --output-dir nextclade_dataset
 
 echo "=========================================="
-echo "2 Ejecutando Nextclade..."
+echo "2️ Ejecutando Nextclade..."
 pixi run nextclade run -D nextclade_dataset -O results/nextclade_output "$FASTA_FILE"
 
 echo "=========================================="
-echo "3 Filtrando secuencias sin frameshift en Spike..."
+echo "3️ Filtrando secuencias sin frameshift en Spike..."
 awk -F'\t' 'NR==1 || $30 !~ /S:/' results/nextclade_output/nextclade.tsv > results/nextclade_sinframeshift_S.tsv
 
 echo "=========================================="
-echo "4 Extrayendo secuencias Spike válidas..."
+echo "4️ Extrayendo secuencias Spike válidas..."
 cut -f2 results/nextclade_sinframeshift_S.tsv > results/ids_spike_validos.txt
 pixi run seqkit grep -f results/ids_spike_validos.txt results/nextclade_output/nextclade.cds_translation.S.fasta > results/spike_sin_frameshift.fasta
 
 echo "=========================================="
-echo "4.5 Filtrando secuencias con aminoácidos desconocidos (X)..."
+echo "4️.5️ Filtrando secuencias con aminoácidos desconocidos (X)..."
 
 # Conteo inicial de secuencias Spike sin frameshift
 TOTAL=$(grep -c "^>" results/spike_sin_frameshift.fasta)
@@ -96,11 +96,11 @@ echo "   Secuencias sin X:                     $TOTAL_NOX"
 echo "   Secuencias eliminadas por X:          $ELIMINADAS"
 
 echo "=========================================="
-echo "5 Descargando referencia Spike (Wuhan-Hu-1)..."
+echo "5️ Descargando referencia Spike (Wuhan-Hu-1)..."
 curl -s "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=protein&id=QHD43416.1&rettype=fasta" > nextclade_dataset/S_reference.fasta
 
 echo "=========================================="
-echo "6 Separando por variantes y alineando..."
+echo "6️ Separando por variantes y alineando..."
 variants=("Lambda" "Gamma" "Delta" "Omicron")
 for variant in "${variants[@]}"; do
     echo "→ Procesando $variant..."
@@ -112,13 +112,13 @@ for variant in "${variants[@]}"; do
 done
 
 echo "=========================================="
-echo "7 Creando sitios N-glicosilados de referencia..."
+echo "7️ Creando sitios N-glicosilados de referencia..."
 python3 scripts/crear_sitios_glyc_ref.py \
     nextclade_dataset/S_reference.fasta \
     scripts/sitios_glyc_ref.txt
 
 echo "=========================================="
-echo "8 Extrayendo tabla de mutaciones..."
+echo "8️ Extrayendo tabla de mutaciones..."
 for variant in "${variants[@]}"; do
     echo "=== Variante: $variant ==="
     python3 scripts/analisis_mut_aa.py \
@@ -127,7 +127,20 @@ for variant in "${variants[@]}"; do
 done
 
 echo "=========================================="
-echo "9 Filtrando IDs con mutaciones ≥10%..."
+echo "8.5️ NxS/T potenciales + ventana ±10 (ALL secuencias) por variante..."
+for variant in "${variants[@]}"; do
+    echo "=== Variante: $variant ==="
+    python3 scripts/analisis_nglyc.py \
+      "results/$variant/${variant}_alineado.fasta" \
+      "scripts/sitios_glyc_ref.txt" \
+      "results/$variant/nglyc_${variant}_ALL.tsv"
+
+    # Copia la tabla ALL a summary (útil para plots globales si quieres)
+    cp "results/$variant/nglyc_${variant}_ALL.tsv" "results/summary_tables/"
+done
+
+echo "=========================================="
+echo "9️ Filtrando IDs con mutaciones ≥10%..."
 
 for variant in "${variants[@]}"; do
     echo "→ Variante $variant"
@@ -141,7 +154,7 @@ for variant in "${variants[@]}"; do
 done
 
 echo "=========================================="
-echo "10 Extrayendo secuencias relevantes (≥1 mutación ≥10%)..."
+echo "10️ Extrayendo secuencias relevantes (≥1 mutación ≥10%)..."
 
 for variant in "${variants[@]}"; do
     seqkit grep -f results/$variant/ids_muts10.txt \
@@ -150,7 +163,7 @@ for variant in "${variants[@]}"; do
 done
 
 echo "=========================================="
-echo "11 Limpiando secuencias (removiendo gaps)..."
+echo "1️1️ Limpiando secuencias (removiendo gaps)..."
 
 for variant in "${variants[@]}"; do
     seqkit seq -u results/$variant/spike_${variant}_muts10.fasta \
@@ -158,7 +171,7 @@ for variant in "${variants[@]}"; do
 done
 
 echo "=========================================="
-echo "12 Construyendo haplotipos reales (identidad 100%)..."
+echo "1️2️ Construyendo haplotipos reales (identidad 100%)..."
 
 for variant in "${variants[@]}"; do
     python3 scripts/build_haplotypes.py \
@@ -167,7 +180,7 @@ for variant in "${variants[@]}"; do
 done
 
 echo "=========================================="
-echo "13 Construyendo haplotipos dominantes (versión 2)..."
+echo "1️3️ Construyendo haplotipos dominantes (versión 2)..."
 
 for variant in "${variants[@]}"; do
     python3 scripts/build_haplotypes_version2.py \
@@ -177,7 +190,7 @@ for variant in "${variants[@]}"; do
 done
 
 echo "=========================================="
-echo "14 Dividiendo haplotipos en FASTAs individuales..."
+echo "1️3️ Dividiendo haplotipos en FASTAs individuales..."
 
 for variant in "${variants[@]}"; do
     python3 scripts/split_haplotypes_for_modeling.py \
@@ -187,13 +200,96 @@ for variant in "${variants[@]}"; do
 done
 
 echo "=========================================="
-echo "¡Listo para modelado 3D!"
-echo "Archivos generados:"
-echo "  • results/<variante>/<variante>_alineado.fasta"
-echo "  • scripts/sitios_glyc_ref.txt"
-echo "  • results/<variante>/mutaciones_<variante>.tsv"
-echo "Usar estos archivos como entrada para modelado por homología y simulación de glicosilación."
+echo "13.5️ Correlate FINAL (HAPDOM): mutaciones en ventana NxS/T (tabla lista para R)..."
+
+for variant in "${variants[@]}"; do
+    echo "=== Variante: $variant ==="
+
+    IDS_FILE="results/$variant/${variant}_haplotypes_dom_ids.tsv"
+
+    if [[ ! -f "$IDS_FILE" ]]; then
+        echo "⚠️  No existe $IDS_FILE. Revisa outputs de build_haplotypes_version2.py"
+        continue
+    fi
+
+    # 1) Expandir la columna sequence_ids (separada por comas) -> 1 ID por línea
+    #    Formato TSV: hap_id <tab> sequence_ids
+    awk -F'\t' 'NR==1{next} {print $2}' "$IDS_FILE" \
+      | tr ',' '\n' \
+      | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' \
+      | grep -v '^$' \
+      | sort -u \
+      > "results/$variant/ids_haplotipos_dom.txt"
+
+    echo "   IDs HAPDOM: $(wc -l < results/$variant/ids_haplotipos_dom.txt)"
+
+    # 2) Filtrar mutaciones a solo esos IDs (ID en columna 1 de mutaciones_*.tsv)
+    awk -F'\t' '
+      NR==FNR { ids[$1]=1; next }
+      FNR==1 { print; next }
+      ($1 in ids) { print }
+    ' "results/$variant/ids_haplotipos_dom.txt" \
+      "results/$variant/mutaciones_${variant}.tsv" \
+      > "results/$variant/mutaciones_${variant}_HAPDOM.tsv"
+
+    echo "   Filas mutaciones HAPDOM: $(($(wc -l < results/$variant/mutaciones_${variant}_HAPDOM.tsv) - 1))"
+
+    # 3) Correlate mutaciones (HAPDOM) vs ventanas NxS/T (usa nglyc ALL)
+    python3 scripts/correlate_mut_glyc.py \
+      "results/$variant/mutaciones_${variant}_HAPDOM.tsv" \
+      "results/$variant/nglyc_${variant}_ALL.tsv" \
+      "results/$variant/mutaciones_con_ventana_nglyc_${variant}_HAPDOM.tsv"
+
+    # 4) Copias para R
+    mkdir -p results/summary_tables
+    cp "results/$variant/mutaciones_${variant}_HAPDOM.tsv" "results/summary_tables/"
+    cp "results/$variant/mutaciones_con_ventana_nglyc_${variant}_HAPDOM.tsv" "results/summary_tables/"
+done
+
 echo "=========================================="
+echo "14️ Dividiendo haplotipos dominantes en FASTAs individuales..."
+for variant in "${variants[@]}"; do
+    python3 scripts/split_haplotypes_for_modeling.py \
+      results/$variant/${variant}_haplotypes_dom.fasta \
+      results/$variant/Seq_model \
+      $variant
+done
+
+echo "=========================================="
+echo "✅ Listo, Dante."
+echo "Tablas listas para R en: results/summary_tables/"
+echo "  - nglyc_<var>_ALL.tsv"
+echo "  - mutaciones_<var>_HAPDOM.tsv"
+echo "  - mutaciones_con_ventana_nglyc_<var>_HAPDOM.tsv"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
